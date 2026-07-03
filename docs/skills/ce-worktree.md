@@ -1,8 +1,8 @@
 # `ce-worktree`
 
-> Ensure work happens in an isolated git worktree without disturbing the current checkout — by detecting existing isolation, deferring to the harness's native worktree tool, and only falling back to plain git.
+> Ensure ticket work happens in an isolated git worktree without disturbing the current checkout — by detecting existing isolation, deferring to the harness's native worktree tool, and only falling back to plain git.
 
-`ce-worktree` is the **isolation guardrail** skill. Its value is judgment, not mechanics: most coding harnesses now create a worktree by default at session start, so the common case is that you are *already* isolated. The skill encodes the discipline to recognize that, defer to the harness's own worktree tooling, and only create a worktree with plain git as a last resort — so you never nest worktrees or create state the harness can't manage.
+`ce-worktree` is the **isolation guardrail** skill. Its value is judgment, not mechanics: ticket work should start isolated unless the user explicitly asks to use the current checkout, and most coding harnesses now create a worktree by default at session start. The common case is that you are *already* isolated. The skill encodes the discipline to recognize that, defer to the harness's own worktree tooling, and only create a worktree with plain git as a last resort — so you never nest worktrees or create state the harness can't manage.
 
 It is pure prose + inline git, with **no bundled script**, so it works verbatim on every supported target (Claude Code, Codex, Gemini, OpenCode, Pi).
 
@@ -13,15 +13,15 @@ It is pure prose + inline git, with **no bundled script**, so it works verbatim 
 | Question | Answer |
 |----------|--------|
 | What does it do? | Ensures isolation exists. Detects an existing worktree first, prefers the harness's native worktree tool, falls back to `git worktree add` under `.worktrees/<branch>` |
-| When to use it | Starting work that should stay isolated; when `ce-work` or `ce-code-review` offers a worktree option |
+| When to use it | Starting ticket work, implementation plans, review units, or any work that should stay isolated |
 | What it produces | Either "you're already isolated, work in place" or a new isolated worktree |
-| Skip when | Single-task work that fits on a branch in the current checkout |
+| Skip when | Already isolated, or the user/caller explicitly chose the current checkout |
 
 ---
 
 ## The Problem
 
-Asking an agent to "make a worktree" is increasingly the *wrong* default, because the agent is usually already in one:
+Blindly asking an agent to "make another worktree" is the wrong default, because the agent may already be in one:
 
 - **Worktree-from-worktree** — creating a worktree from inside a linked worktree resolves the new one against the *main* clone, landing it in a different directory tree the user isn't working in.
 - **Phantom state** — a behind-the-back `git worktree add` is invisible to the harness (Orca, Cursor, etc.) that owns worktree lifecycle: it can't list, navigate to, or clean it up.
@@ -74,13 +74,14 @@ In a plain terminal checkout with no native worktree tool, the same invocation f
 
 Reach for `ce-worktree` when:
 
-- You're starting work that should stay isolated from the current checkout
-- A skill (`ce-work`, `ce-code-review`) offered worktree as an option
+- You're starting ticket work, an implementation plan, or a review unit
+- You're starting any work that should stay isolated from the current checkout
+- A skill (`ce-work`, `ce-code-review`) routes through worktree isolation
 
 Skip it when:
 
-- The work is single-task and fits on a branch in the current checkout
 - You are already isolated and have no need for a *second*, parallel workspace (the skill detects this for you)
+- The user or caller explicitly chose the current checkout
 
 ---
 
@@ -88,7 +89,7 @@ Skip it when:
 
 `ce-worktree` is invoked from chain skills as their isolation step:
 
-- **`/ce-work`** — when starting work, the user can choose worktree isolation over branching in the current checkout
+- **`/ce-work`** — when starting ticket work, isolate by default unless already isolated or explicitly told to use the current checkout
 - **`/ce-code-review`** — for reviewing PRs concurrently without disturbing in-progress work
 
 Upstream callers pass meaningful branch names; the skill expects `feat/...`, `fix/...`, `refactor/...` shapes — not auto-generated random names.

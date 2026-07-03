@@ -1,11 +1,18 @@
 ---
 name: ce-worktree
-description: Set up isolated git worktrees — create a new branch for fresh work, or attach a worktree to an existing branch/PR/commit to work on it in isolation. Use when starting isolated work or isolating an existing ref; detects existing isolation first.
+description: "task=workflow_setup; when=start ticket work or isolate branch/PR/commit in git worktree; output=active isolated worktree; not=PR merge cleanup"
+metadata:
+  optimized_on: "2026-07-03"
 ---
 
 # Worktree Isolation
 
-Ensure the current work happens in an isolated workspace, without disturbing the user's main checkout. Most coding harnesses now create a worktree by default at session start, so the common case is that **isolation already exists** — detect that first and do not create a redundant one.
+Ensure ticket work happens in an isolated workspace, without disturbing the
+user's main checkout. For ticket work, create or enter an isolated worktree
+unless already isolated or the user explicitly requests the current checkout.
+Most coding harnesses now create a worktree by default at session start, so the
+common case is that **isolation already exists** — detect that first and do not
+create a redundant one.
 
 Order of operations: **detect existing isolation -> prefer a native worktree tool -> fall back to plain git.** Never create a worktree the harness cannot see.
 
@@ -68,12 +75,16 @@ cd "$(git rev-parse --show-toplevel)"      # return to the current checkout root
 
 ## When to create a worktree
 
-Create one (Step 1/2) only when you are **not** already isolated and you need a separate workspace:
+Create one (Step 1/2) when ticket work needs an isolated workspace and Step 0
+shows you are not already isolated:
 
+- Starting a ticket, implementation plan, or review unit
 - Reviewing a PR while keeping the current checkout free for other work
 - Running multiple features in parallel without branch-switching overhead
 
-Do not create a worktree for single-task work that can happen on a branch in the current checkout — and never when Step 0 shows you are already in one.
+Do not create a worktree when Step 0 shows you are already in one. Work in the
+current checkout only when the user explicitly requests it or when the caller's
+workflow has already made the checkout isolation decision.
 
 ## Integration
 
